@@ -47,7 +47,7 @@ And then:
 
      ./node_modules/tilelive/bin/copy -s pyramid --minzoom=10 --maxzoom=18  "mbtiles:///Users/user/maps/Columbus.mbtiles" "mongotiles://127.0.0.1:27017/columbus_tiles/"
 
-The `copy` command above is a sample application provided by tilelive.js, and it has a bunch more options that you should check out. Tilelive is actually an API that any other app can use, so cdbtiles should enable CouchDB to play nicely with apps and other data sources/sinks that also support tilelive. The source and sink URIs have custom protocols (mbtiles: and cdbtiles:) that tilelive knows what to do with via the backend plugins you've now installed.  
+The `copy` command above is a sample application provided by tilelive.js, and it has a bunch more options that you should check out. Tilelive is actually an API that any other app can use, so cdbtiles should enable CouchDB to play nicely with apps and other data sources/sinks that also support tilelive. The source and sink URIs have custom protocols (mbtiles: and mongotiles:) that tilelive knows what to do with via the backend plugins you've now installed.  
 
 Serving your tiles out of MongoDB over HTTP requires one more piece: [an HTTP server that can use GridFS as its filestore](https://github.com/search?q=gridFS+HTTP) (there are many options).  In this example, mongotiles will use the default `fs` GridFS bucket in the `columbus_tiles` database, so you'll need to configure your HTTP server to look there for GridFS files.
 
