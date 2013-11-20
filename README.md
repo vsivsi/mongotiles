@@ -51,7 +51,7 @@ The `copy` command above is a sample application provided by tilelive.js, and it
 
 Serving your tiles out of MongoDB over HTTP requires one more piece: [an HTTP server that can use GridFS as its filestore](https://github.com/search?q=gridFS+HTTP) (there are many options).  In this example, mongotiles will use the default `fs` GridFS bucket in the `columbus_tiles` database, so you'll need to configure your HTTP server to look there for GridFS files.
 
-Once that's up-and-running, if you point a [Leaflet](http://leafletjs.com/) enabled web page page to e.g. `http://127.0.0.1/columbus_tiles/tile_{z}_{x}_{y}` and you'll be serving up map tiles from MongoDB (obviously the URL path before "tile_{z}_{x}_{y}" will depend on how you configure the HTTP server).  
+Once that's up-and-running, if you point a [Leaflet](http://leafletjs.com/) enabled web page page to e.g. `http://127.0.0.1/columbus_tiles/tile_{z}_{x}_{y}` and you'll be serving up map tiles from MongoDB (obviously the URL path before `tile_{z}_{x}_{y}` will depend on how you configure the HTTP server).  
 
 For what it's worth, this also lets you to serve up the [TileJSON](https://github.com/mapbox/tilejson-spec) information for your maps, just use, e.g. `http://127.0.0.1/columbus_tiles/tilejson.json`
 
