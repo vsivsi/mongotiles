@@ -5,7 +5,7 @@ mongotiles is a [tilelive.js](https://github.com/mapbox/tilelive.js) backend (so
 
 Q: What the heck does that mean?  
 
-A: With this installed, you can use MongoDBs built-in GridFS file store to read/write map image tiles from/to other tilelive.js sources/sinks (mbtiles, Mapnik, TileJSON, S3, etc.)
+A: With this installed, you can use MongoDB's built-in GridFS file store to read/write map image tiles from/to other tilelive.js sources/sinks (mbtiles, Mapnik, TileJSON, S3, etc.)
 
 Q: Come again?
 

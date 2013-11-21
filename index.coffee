@@ -71,7 +71,7 @@ get_mime_type = (bytes) ->
         bytes[5] is 0x61) 
             return 'image/gif'
     else
-        console.warn "tilecouch: Image data with unknown MIME type in putTile call to get_mime_type."
+        console.warn "#{protocol}: Image data with unknown MIME type in putTile call to get_mime_type."
         return 'application/octet-stream'
 
 class Tilemongo

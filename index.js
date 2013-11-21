@@ -80,7 +80,7 @@
     } else if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38 && (bytes[4] === 0x39 || bytes[4] === 0x37) && bytes[5] === 0x61) {
       return 'image/gif';
     } else {
-      console.warn("tilecouch: Image data with unknown MIME type in putTile call to get_mime_type.");
+      console.warn("" + protocol + ": Image data with unknown MIME type in putTile call to get_mime_type.");
       return 'application/octet-stream';
     }
   };
