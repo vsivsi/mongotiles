@@ -1,6 +1,6 @@
 {
   "name": "mongotiles",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "mongotiles is a tilelive backend plug-in for MongoDB GridFS",
   "main": "index.js",
   "dependencies": {
