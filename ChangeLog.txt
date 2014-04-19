@@ -1,5 +1,9 @@
 mongotiles version history
 
+Version 0.0.3
+
+- Updated mongodb driver to 1.4.0
+
 Version 0.0.2
 
 - Fixed some typos in documentation
