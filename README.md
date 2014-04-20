@@ -64,3 +64,5 @@ For what it's worth, this also lets you serve up the [TileJSON](https://github.c
 New in v0.1.0: You can enable gridFS locking (for a small performance penalty). This makes it safe to live update a running server that is sharing and using an existing gridFS store. This assumes that the server is also using `gridfs-locks` for safe concurrency. Enable it by adding the `locking=true` query to the end of the `mongotiles` URI:
 
      mongotiles://127.0.0.1:27017/columbus_tiles/my_bucket/?locking=true
+
+Also new in v0.1.0, the x, y, z coordinates, and the data type [tile|grid] are written to the gridFS file metadata object, so you can easily build your own URL format in http and do metadata based lookups to fulfill requests. If you use this, you'll probably want to ensurethat your mongoDB has a compound index on the metadata you'll be using.
