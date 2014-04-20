@@ -65,4 +65,4 @@ New in v0.1.0: You can enable gridFS locking (for a small performance penalty). 
 
      mongotiles://127.0.0.1:27017/columbus_tiles/my_bucket/?locking=true
 
-Also new in v0.1.0, the x, y, z coordinates, and the data type [tile|grid] are written to the gridFS file metadata object, so you can easily build your own URL format in http and do metadata based lookups to fulfill requests. If you use this, you'll probably want to ensurethat your mongoDB has a compound index on the metadata you'll be using.
+Also new in v0.1.0, the `x`, `y`, `z` coordinates, and the data type `[tile|grid]` are written to the gridFS file document metadata object, so you can easily build your own URL format in http and do metadata based lookups to fulfill requests. If you use this, you'll probably want to ensure that your mongoDB has a compound index on the metadata you'll be using.
