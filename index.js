@@ -36,7 +36,7 @@
  */
 
 (function() {
-  var Lock, LockCollection, Tilemongo, default_root, fs, get_mime_type, grid_name, mongodb, path, protocol, tile_name, tilejson_name, tilelive, url;
+  var Lock, LockCollection, Tilemongo, default_root, fs, get_mime_type, grid_name, mongodb, path, protocol, querystring, tile_name, tilejson_name, tilelive, url;
 
   path = require('path');
 
@@ -44,13 +44,15 @@
 
   url = require('url');
 
+  querystring = require('querystring');
+
   tilelive = require('tilelive');
 
   mongodb = require('mongodb');
 
-  LockCollection = require('grid-locks').LockCollection;
+  LockCollection = require('gridfs-locks').LockCollection;
 
-  Lock = require('grid-locks').Lock;
+  Lock = require('gridfs-locks').Lock;
 
   protocol = 'mongotiles';
 
@@ -90,39 +92,81 @@
   };
 
   Tilemongo = (function() {
+    Tilemongo.prototype._file_exists = function(fn, cb) {
+      return this.files.findOne({
+        filename: fn
+      }, {
+        _id: 1
+      }, (function(_this) {
+        return function(err, doc) {
+          return cb(err, doc);
+        };
+      })(this));
+    };
+
     Tilemongo.prototype._write_buffer = function(fn, type, buffer, metadata, cb) {
-      var gs;
-      gs = new mongodb.GridStore(this.db, fn, 'w', {
-        root: this.grid_root,
-        content_type: type,
-        metadata: metadata
-      });
-      return gs.open((function(_this) {
-        return function(err, gs) {
-          if (err) {
-            return cb(err);
-          }
-          return gs.write(buffer, function(err, gs) {
+      var write_it;
+      write_it = (function(_this) {
+        return function(_id, l) {
+          var gs;
+          gs = new mongodb.GridStore(_this.db, _id, fn, 'w', {
+            root: _this.grid_root,
+            content_type: type,
+            metadata: metadata
+          });
+          return gs.open(function(err, gs) {
             if (err) {
               return cb(err);
             }
-            return gs.close(cb);
+            return gs.write(buffer, function(err, gs) {
+              if (err) {
+                return cb(err);
+              }
+              return gs.close(function(err) {
+                if (l) {
+                  l.releaseLock();
+                }
+                return cb(err);
+              });
+            });
           });
+        };
+      })(this);
+      return this._file_exists(fn, (function(_this) {
+        return function(err, doc) {
+          var lock;
+          if (err) {
+            return cb(err);
+          }
+          if (!doc) {
+            doc = {
+              _id: new mongodb.ObjectID()
+            };
+          }
+          if (_this.lockColl) {
+            lock = Lock(doc._id, _this.lockColl, {}).obtainWriteLock();
+            lock.on('timed-out', function() {
+              return cb(new Error("Timed out waiting for write lock"));
+            });
+            lock.on('error', function(err) {
+              return cb(err);
+            });
+            return lock.on('locked', function(ld) {
+              return write_it(doc._id, lock);
+            });
+          } else {
+            return write_it(doc._id);
+          }
         };
       })(this));
     };
 
     Tilemongo.prototype._read_buffer = function(fn, cb) {
-      return mongodb.GridStore.exist(this.db, fn, this.grid_root, {}, (function(_this) {
-        return function(err, exists) {
+      var read_it;
+      read_it = (function(_this) {
+        return function(_id, l) {
           var gs;
-          if (err) {
-            return cb(err);
-          }
-          if (!exists) {
-            return cb(null, null);
-          }
-          gs = new mongodb.GridStore(_this.db, fn, 'r', {
+          gs = new mongodb.GridStore(_this.db, _id, 'r', {
             root: _this.grid_root
           });
           return gs.open(function(err, gs) {
@@ -134,10 +178,38 @@
                 return cb(err);
               }
               return gs.close(function(err) {
+                if (l) {
+                  l.releaseLock();
+                }
                 return cb(err, buffer);
               });
             });
           });
+        };
+      })(this);
+      return this._file_exists(fn, (function(_this) {
+        return function(err, doc) {
+          var lock;
+          if (err) {
+            return cb(err);
+          }
+          if (!doc) {
+            return cb(null, null);
+          }
+          if (_this.lockColl) {
+            lock = Lock(doc._id, _this.lockColl, {}).obtainReadLock();
+            lock.on('timed-out', function() {
+              return cb(new Error("Timed out waiting for write lock"));
+            });
+            lock.on('error', function(err) {
+              return cb(err);
+            });
+            return lock.on('locked', function(ld) {
+              return read_it(doc._id, lock);
+            });
+          } else {
+            return read_it(doc._id);
+          }
         };
       })(this));
     };
@@ -155,34 +227,63 @@
     };
 
     function Tilemongo(uri, callback) {
-      var tile_url, tilepath_match, _ref;
+      var locking, tilepath_match, _ref, _ref1;
       this.starts = 0;
-      tile_url = url.parse(uri);
-      if (!(tile_url.protocol === ("" + protocol + ":") || tile_url.protocol === ("locking" + protocol + ":"))) {
-        return callback(new Error("Bad uri protocol '" + tile_url.protocol + "'.  Must be " + protocol + " or locking" + protocol + "."));
+      if (typeof uri === 'string') {
+        uri = url.parse(uri, true);
       }
-      tilepath_match = tile_url.pathname.match(new RegExp("(/[^/]+/)([^/]+/)?"));
+      if (typeof uri.query === 'string') {
+        uri.query = querystring.parse(uri.query);
+      }
+      if (uri.protocol !== ("" + protocol + ":")) {
+        return callback(new Error("Bad uri protocol '" + uri.protocol + "'.  Must be " + protocol + "."));
+      }
+      tilepath_match = uri.pathname.match(new RegExp("(/[^/]+/)([^/]+/)?"));
       if (!tilepath_match) {
-        return callback(new Error("Bad tile url path '" + tile_url.pathname + "' for " + tile_url.protocol + "."));
+        return callback(new Error("Bad tile url path '" + uri.pathname + "' for " + uri.protocol + "."));
       }
-      tile_url.query = '';
-      tile_url.search = '';
-      tile_url.hash = '';
-      tile_url.protocol = 'http:';
-      this.source = url.format(tile_url);
+      locking = (_ref = uri.query.locking) != null ? _ref : false;
+      uri.query = '';
+      uri.search = '';
+      uri.hash = '';
+      uri.protocol = 'http:';
+      this.source = url.format(uri);
       this.db_name = tilepath_match[1].slice(1, -1);
-      this.grid_root = ((_ref = tilepath_match[2]) != null ? _ref.slice(0, -1) : void 0) || default_root;
-      tile_url.path = tilepath_match[1];
-      tile_url.pathname = tile_url.path;
-      tile_url.protocol = 'mongodb:';
-      this.server = url.format(tile_url);
+      this.grid_root = ((_ref1 = tilepath_match[2]) != null ? _ref1.slice(0, -1) : void 0) || default_root;
+      uri.path = tilepath_match[1];
+      uri.pathname = uri.path;
+      uri.protocol = 'mongodb:';
+      this.server = url.format(uri);
       mongodb.MongoClient.connect(this.server, (function(_this) {
         return function(err, db) {
           if (err) {
             return callback(err);
           }
           _this.db = db;
-          return callback(null, _this);
+          return _this.db.collection("" + _this.grid_root + ".files", {
+            w: 1
+          }, function(err, coll) {
+            if (err) {
+              return callback(err);
+            }
+            _this.files = coll;
+            if (!locking) {
+              return callback(null, _this);
+            } else {
+              _this.lockColl = LockCollection(_this.db, {
+                root: _this.grid_root,
+                timeOut: 60,
+                pollingInterval: 5,
+                lockExpiration: 30
+              });
+              _this.lockColl.on('ready', function() {
+                return callback(null, _this);
+              });
+              return _this.lockColl.on('error', function(err) {
+                return callback(err);
+              });
+            }
+          });
         };
       })(this));
     }

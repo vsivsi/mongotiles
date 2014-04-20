@@ -36,11 +36,12 @@
 path = require 'path'
 fs = require 'fs'
 url = require 'url'
+querystring = require 'querystring'
 tilelive = require 'tilelive'
 mongodb = require 'mongodb'
 
-LockCollection = require('grid-locks').LockCollection
-Lock = require('grid-locks').Lock
+LockCollection = require('gridfs-locks').LockCollection
+Lock = require('gridfs-locks').Lock
 
 protocol = 'mongotiles'
 
@@ -79,30 +80,66 @@ get_mime_type = (bytes) ->
 
 class Tilemongo
 
+    _file_exists : (fn, cb) ->
+        @files.findOne {filename: fn}, {_id: 1}, (err, doc) =>
+            return cb err, doc
+
     _write_buffer : (fn, type, buffer, metadata, cb) ->
-        gs = new mongodb.GridStore @db, fn, 'w', { root : @grid_root, content_type : type, metadata: metadata }
-        gs.open (err, gs) =>
-            return cb err if err
-            gs.write buffer, (err, gs) =>
+
+        write_it = (_id, l) =>
+            gs = new mongodb.GridStore @db, _id, fn, 'w', { root : @grid_root, content_type : type, metadata: metadata }
+            gs.open (err, gs) =>
                 return cb err if err
-                gs.close cb
+                gs.write buffer, (err, gs) =>
+                    return cb err if err
+                    gs.close (err) =>
+                        l.releaseLock() if l
+                        cb err
+
+        @_file_exists fn, (err, doc) =>
+            return cb err if err
+            unless doc
+                doc = { _id: new mongodb.ObjectID() }
+            if @lockColl
+                lock = Lock(doc._id, @lockColl, {}).obtainWriteLock()
+                lock.on 'timed-out', () =>
+                    cb new Error "Timed out waiting for write lock"
+                lock.on 'error', (err) =>
+                    cb err
+                lock.on 'locked', (ld) =>
+                    write_it doc._id, lock
+            else
+                write_it doc._id
 
     _read_buffer : (fn, cb) ->
-        mongodb.GridStore.exist @db, fn, @grid_root, {}, (err, exists) =>
-            return cb err if err
-            unless exists
-                return cb null, null
-            gs = new mongodb.GridStore @db, fn, 'r', { root : @grid_root }
+
+        read_it = (_id, l) =>
+            gs = new mongodb.GridStore @db, _id, 'r', { root : @grid_root }
             gs.open (err, gs) =>
                 return cb err if err
                 gs.read (err, buffer) =>
                     return cb err if err
                     gs.close (err) =>
+                        l.releaseLock() if l
                         cb err, buffer
+
+        @_file_exists fn, (err, doc) =>
+            return cb err if err
+            unless doc
+                return cb null, null
+            if @lockColl
+                lock = Lock(doc._id, @lockColl, {}).obtainReadLock()
+                lock.on 'timed-out', () =>
+                    cb new Error "Timed out waiting for write lock"
+                lock.on 'error', (err) =>
+                    cb err
+                lock.on 'locked', (ld) =>
+                    read_it doc._id, lock
+            else
+                read_it doc._id
 
     @registerProtocols = (tilelive) ->
         tilelive.protocols["#{protocol}:"] = @
-        # tilelive.protocols["locking#{protocol}:"] = @
 
     @list = (filepath, callback) ->
         callback new Error ".list not implemented for #{protocol}"
@@ -112,38 +149,48 @@ class Tilemongo
 
     constructor : (uri, callback) ->
         @starts = 0
-        tile_url = url.parse uri
-        unless tile_url.protocol is "#{protocol}:" or tile_url.protocol is "locking#{protocol}:"
-            return callback new Error "Bad uri protocol '#{tile_url.protocol}'.  Must be #{protocol} or locking#{protocol}."
-        tilepath_match = tile_url.pathname.match new RegExp "(/[^/]+/)([^/]+/)?"
+        # uri seems to be preparsed, but make sure...
+        if typeof uri is 'string'
+            uri = url.parse uri, true
+        if typeof uri.query is 'string'
+            uri.query = querystring.parse uri.query
+        unless uri.protocol is "#{protocol}:"
+            return callback new Error "Bad uri protocol '#{uri.protocol}'.  Must be #{protocol}."
+        tilepath_match = uri.pathname.match new RegExp "(/[^/]+/)([^/]+/)?"
         unless tilepath_match
-            return callback new Error "Bad tile url path '#{tile_url.pathname}' for #{tile_url.protocol}."
-        tile_url.query = ''
-        tile_url.search = ''
-        tile_url.hash = ''
-        tile_url.protocol = 'http:'
-        @source = url.format tile_url
+            return callback new Error "Bad tile url path '#{uri.pathname}' for #{uri.protocol}."
+        locking = uri.query.locking ? false
+        uri.query = ''
+        uri.search = ''
+        uri.hash = ''
+        uri.protocol = 'http:'
+        @source = url.format uri
         @db_name = tilepath_match[1][1...-1]
         @grid_root = tilepath_match[2]?[0...-1] or default_root
-        tile_url.path = tilepath_match[1]
-        tile_url.pathname = tile_url.path
-        tile_url.protocol = 'mongodb:'
-        @server = url.format tile_url
+        uri.path = tilepath_match[1]
+        uri.pathname = uri.path
+        uri.protocol = 'mongodb:'
+        @server = url.format uri
         mongodb.MongoClient.connect @server, (err, db) =>
             return callback err if err
             @db = db
-            # @lockColl = LockCollection(@db,
-            #     root: @grid_root
-            #     timeOut: 60,
-            #     pollingInterval: 5,
-            #     lockExpiration: 30)
+            @db.collection "#{@grid_root}.files", { w: 1 }, (err, coll) =>
+                return callback err if err
+                @files = coll
+                unless locking
+                    return callback null, @
+                else
+                    @lockColl = LockCollection(@db,
+                        root: @grid_root
+                        timeOut: 60,
+                        pollingInterval: 5,
+                        lockExpiration: 30)
 
-            # @lockColl.on 'ready', () ->
-            #     callback null, @
+                    @lockColl.on 'ready', () =>
+                        callback null, @
 
-            # @lockColl.on 'error', (err) ->
-            #     callback err
-            callback null, @
+                    @lockColl.on 'error', (err) ->
+                        callback err
 
     close : (callback) ->
         @db.close()
