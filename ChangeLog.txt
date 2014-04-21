@@ -1,5 +1,9 @@
 mongotiles version history
 
+Version 0.1.1
+
+- Fixed issue when no query string is present
+
 Version 0.1.0
 
 - Added support for currency using gridfs locking

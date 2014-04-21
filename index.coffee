@@ -159,7 +159,7 @@ class Tilemongo
         tilepath_match = uri.pathname.match new RegExp "(/[^/]+/)([^/]+/)?"
         unless tilepath_match
             return callback new Error "Bad tile url path '#{uri.pathname}' for #{uri.protocol}."
-        locking = uri.query.locking ? false
+        locking = uri.query?.locking ? false
         uri.query = ''
         uri.search = ''
         uri.hash = ''

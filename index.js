@@ -227,7 +227,7 @@
     };
 
     function Tilemongo(uri, callback) {
-      var locking, tilepath_match, _ref, _ref1;
+      var locking, tilepath_match, _ref, _ref1, _ref2;
       this.starts = 0;
       if (typeof uri === 'string') {
         uri = url.parse(uri, true);
@@ -242,14 +242,14 @@
       if (!tilepath_match) {
         return callback(new Error("Bad tile url path '" + uri.pathname + "' for " + uri.protocol + "."));
       }
-      locking = (_ref = uri.query.locking) != null ? _ref : false;
+      locking = (_ref = (_ref1 = uri.query) != null ? _ref1.locking : void 0) != null ? _ref : false;
       uri.query = '';
       uri.search = '';
       uri.hash = '';
       uri.protocol = 'http:';
       this.source = url.format(uri);
       this.db_name = tilepath_match[1].slice(1, -1);
-      this.grid_root = ((_ref1 = tilepath_match[2]) != null ? _ref1.slice(0, -1) : void 0) || default_root;
+      this.grid_root = ((_ref2 = tilepath_match[2]) != null ? _ref2.slice(0, -1) : void 0) || default_root;
       uri.path = tilepath_match[1];
       uri.pathname = uri.path;
       uri.protocol = 'mongodb:';
