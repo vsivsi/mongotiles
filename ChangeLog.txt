@@ -1,5 +1,9 @@
 mongotiles version history
 
+Version 0.1.5
+
+- Updated gridfs-locks and mongodb driver. Mongo 2.6 and 2.4 now fully supported again.
+
 Version 0.1.4
 
 - Updated gridfs-locks version yet again to fix another mongodb 2.4.x compatibility issue
