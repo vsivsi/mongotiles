@@ -30,6 +30,10 @@ You need [node.js](http://nodejs.org/).  Then:
 
      npm install mongotiles
 
+And you can test it by going to `node_modules/mongotiles` and then:
+
+     npm test
+
 Nice!  Now what?
 
 #### Usage
