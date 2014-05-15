@@ -3,6 +3,7 @@
 assert = require 'assert'
 mongo = require 'mongodb'
 tilelive = require 'tilelive'
+mbtiles = require 'mbtiles'
 
 describe 'Test test', () ->
   before (done) ->
