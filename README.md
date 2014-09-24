@@ -51,7 +51,7 @@ You should be able to easily copy all of your data from the .mbtiles file to you
 
 And then:
 
-     ./node_modules/tilelive/bin/copy -s pyramid --minzoom=10 --maxzoom=18  \
+     ./node_modules/tilelive/bin/tilelive-copy -s pyramid --minzoom=10 --maxzoom=18  \
           "mbtiles:///Users/user/maps/Columbus.mbtiles" \
           "mongotiles://127.0.0.1:27017/columbus_tiles/"
 

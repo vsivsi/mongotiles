@@ -67,7 +67,7 @@ class Tilemongo
     _write_buffer : (fn, type, buffer, metadata, cb) ->
 
         write_it = (_id, l) =>
-            gs = new mongodb.GridStore @db, _id, fn, 'w', { root : @grid_root, content_type : type, metadata: metadata }
+            gs = new mongodb.GridStore @db, _id, fn, 'w', { w : 1, root : @grid_root, content_type : type, metadata: metadata }
             gs.open (err, gs) =>
                 return cb err if err
                 gs.write buffer, (err, gs) =>
@@ -173,8 +173,7 @@ class Tilemongo
                         callback err
 
     close : (callback) ->
-        @db.close()
-        callback null
+        @db.close(callback)
 
     getInfo : (callback) ->
         @_read_buffer tilejson_name, (err, info) =>

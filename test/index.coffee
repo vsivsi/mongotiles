@@ -31,18 +31,22 @@ describe 'Copy test', () ->
 
   it 'should copy', (done) ->
     this.timeout 15000
-    scheme = tilelive.Scheme.create 'scanline',
-      bbox: [ -180, -84, 180, 84 ],
-      minzoom: 0,
-      maxzoom: 4
-    task = new tilelive.CopyTask source, sink, scheme
-    task.on 'error', done
-    task.on 'finished', done
-    task.start()
 
-  it "should contain 682 tiles/grids", (done) ->
+    readStream = tilelive.createReadStream source,
+      type: 'scanline'
+      bbox: [ -180, -84, 180, 84 ]
+      minzoom: 0
+      maxzoom: 4
+
+    readStream.on 'error', (e) -> throw e
+    writeStream = tilelive.createWriteStream sink
+    writeStream.on 'error', (e) -> throw e
+    writeStream.on 'stop', done
+    readStream.pipe(writeStream)
+
+  it "should contain 342 files", (done) ->
     collection.count (err, c) ->
-      assert.equal c, 682
+      assert.equal c, 342
       done err
 
   after (done) ->

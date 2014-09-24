@@ -1,17 +1,17 @@
 {
   "name": "mongotiles",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "mongotiles is a tilelive backend plug-in for MongoDB GridFS",
   "main": "lib/index.js",
   "dependencies": {
-    "mongodb": "~1.4.4",
-    "gridfs-locks": ">=1.2.1"
+    "mongodb": "~1.4.12",
+    "gridfs-locks": ">=1.2.2"
   },
   "devDependencies": {
-    "coffee-script": "~1.7.1",
-    "tilelive": "~4.5.3",
-    "mbtiles": "~0.2.9",
-    "mocha": "~1.18.2"
+    "coffee-script": "~1.8.0",
+    "tilelive": "~5.2.2",
+    "mbtiles": "~0.5.0",
+    "mocha": "~1.21.4"
     },
   "scripts": {
     "prepublish": "coffee --compile --output lib/ src/",
@@ -32,7 +32,7 @@
     "server"
   ],
   "engine": {
-    "node": ">=0.8"
+    "node": ">=0.10"
   },
   "readmeFilename": "README.md",
   "bugs": {
