@@ -3,7 +3,7 @@
 #### v0.3.0
 
 * Updated tests for tilelive 5.x compatibility
-* Added writeConcern=1 for gridFS writes, to be sure that they are comitted before callback
+* Added writeConcern=1 for gridFS writes, to be sure that they are committed before callback
 * Updated all npm dependencies
 
 #### v0.2.0
