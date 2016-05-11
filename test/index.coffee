@@ -25,7 +25,7 @@ describe 'Copy test', () ->
       done err
 
   it 'should open the mongotiles sink', (done) ->
-    tilelive.load 'mongotiles://127.0.0.1:27017/mongotiles_test/testcoll/', (err, s) ->
+    tilelive.load 'mongotiles://127.0.0.1:27017/mongotiles_test/testcoll', (err, s) ->
       sink = s
       done err
 

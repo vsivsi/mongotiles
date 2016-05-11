@@ -150,7 +150,7 @@ class Tilemongo
         uri.path = tilepath_match[1]
         uri.pathname = uri.path
         uri.protocol = 'mongodb:'
-        @server = url.format uri
+        @server = url.format(uri)[0...-1]
         mongodb.MongoClient.connect @server, (err, db) =>
             return callback err if err
             @db = db
@@ -232,4 +232,3 @@ class Tilemongo
         @_write_buffer gn, 'application/json', JSON.stringify(grid), { type: "grid", x:x, y:y, z:z }, callback
 
 module.exports = Tilemongo
-
