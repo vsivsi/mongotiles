@@ -29,7 +29,7 @@ describe 'Copy test', () ->
       sink = s
       done err
 
-  it 'should copy', (done) ->
+  it 'should copy 342 files', (done) ->
     this.timeout 15000
 
     readStream = tilelive.createReadStream source,
@@ -41,13 +41,12 @@ describe 'Copy test', () ->
     readStream.on 'error', (e) -> throw e
     writeStream = tilelive.createWriteStream sink
     writeStream.on 'error', (e) -> throw e
-    writeStream.on 'stop', done
-    readStream.pipe(writeStream)
+    writeStream.on 'stop', () ->
+      collection.count (err, c) ->
+         assert.equal c, 342
+         done err
 
-  it "should contain 342 files", (done) ->
-    collection.count (err, c) ->
-      assert.equal c, 342
-      done err
+    readStream.pipe(writeStream)
 
   after (done) ->
     db.dropDatabase () ->

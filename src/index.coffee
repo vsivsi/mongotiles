@@ -1,6 +1,6 @@
 ###
 #
-# Copyright (C) 2013-2014 by Vaughn Iverson
+# Copyright (C) 2013-2016 by Vaughn Iverson
 #
 # mongotiles
 #
@@ -136,7 +136,7 @@ class Tilemongo
             uri.query = querystring.parse uri.query
         unless uri.protocol is "#{protocol}:"
             return callback new Error "Bad uri protocol '#{uri.protocol}'.  Must be #{protocol}."
-        tilepath_match = uri.pathname.match new RegExp "(/[^/]+/)([^/]+/)?"
+        tilepath_match = uri.pathname.match new RegExp "(/[^/]+)(/[^/]+)?"
         unless tilepath_match
             return callback new Error "Bad tile url path '#{uri.pathname}' for #{uri.protocol}."
         locking = uri.query?.locking ? false
@@ -145,15 +145,17 @@ class Tilemongo
         uri.hash = ''
         uri.protocol = 'http:'
         @source = url.format uri
-        @db_name = tilepath_match[1][1...-1]
-        @grid_root = tilepath_match[2]?[0...-1] or default_root
-        uri.path = tilepath_match[1]
+        @db_name = tilepath_match[1][1...]
+        @grid_root = tilepath_match[2]?[1...] or default_root
+        uri.path = @db_name
         uri.pathname = uri.path
         uri.protocol = 'mongodb:'
-        @server = url.format(uri)[0...-1]
+        @server = url.format(uri)
+        console.log "Server: #{@server}"
         mongodb.MongoClient.connect @server, (err, db) =>
             return callback err if err
             @db = db
+            console.log "GRID ROOT #{@grid_root}"
             @db.collection "#{@grid_root}.files", { w: 1 }, (err, coll) =>
                 return callback err if err
                 @files = coll
