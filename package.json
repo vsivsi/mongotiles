@@ -4,7 +4,7 @@
   "description": "mongotiles is a tilelive backend plug-in for MongoDB GridFS",
   "main": "lib/index.js",
   "dependencies": {
-    "mongodb": "~1.4.4",
+    "mongodb": "~2.1.18",
     "gridfs-locks": ">=1.2.1"
   },
   "devDependencies": {
