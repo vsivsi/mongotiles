@@ -25,25 +25,28 @@ describe 'Copy test', () ->
       done err
 
   it 'should open the mongotiles sink', (done) ->
-    tilelive.load 'mongotiles://127.0.0.1:27017/mongotiles_test/testcoll/', (err, s) ->
+    tilelive.load 'mongotiles://127.0.0.1:27017/mongotiles_test/testcoll', (err, s) ->
       sink = s
       done err
 
-  it 'should copy', (done) ->
+  it 'should copy 342 files', (done) ->
     this.timeout 15000
-    scheme = tilelive.Scheme.create 'scanline',
-      bbox: [ -180, -84, 180, 84 ],
-      minzoom: 0,
-      maxzoom: 4
-    task = new tilelive.CopyTask source, sink, scheme
-    task.on 'error', done
-    task.on 'finished', done
-    task.start()
 
-  it "should contain 682 tiles/grids", (done) ->
-    collection.count (err, c) ->
-      assert.equal c, 682
-      done err
+    readStream = tilelive.createReadStream source,
+      type: 'scanline'
+      bbox: [ -180, -84, 180, 84 ]
+      minzoom: 0
+      maxzoom: 4
+
+    readStream.on 'error', (e) -> throw e
+    writeStream = tilelive.createWriteStream sink
+    writeStream.on 'error', (e) -> throw e
+    writeStream.on 'stop', () ->
+      collection.count (err, c) ->
+         assert.equal c, 342
+         done err
+
+    readStream.pipe(writeStream)
 
   after (done) ->
     db.dropDatabase () ->
